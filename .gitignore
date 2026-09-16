@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+client/
+database.conf
+logs/
+test.json
+YTdata2026-*.json
+data/
+.git/
