@@ -15,6 +15,7 @@ connection = psycopg2.connect(
 
 cursor = connection.cursor()
 
+# docker exec -it youtube-postgres psql -U postgres -d youtube_db
 
 # =========================
 # STAGING TABLE
