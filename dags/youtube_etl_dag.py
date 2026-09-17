@@ -9,6 +9,7 @@ import psycopg2
 from airflow import DAG
 from datetime import datetime
 from airflow.operators.python import PythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 import os
 
 
@@ -17,27 +18,13 @@ CHANNEL_ID = 'UCs2iRkOaPo7QLRKCtiqczEA'
 API_KEY    = 'AIzaSyAkU2QfUvLWhlxdlqzzR-KkoY8-63RstZQ'
 
 
-url="https://www.youtube.com/@BroCodez/playlists"
-
-
-
-
-
-
-# ch_request = youtube.channels().list(
-#     part='contentDetails',
-#     id=channele_id)
-
-# ch_response = ch_request.execute()
-
-
-# upload_list=ch_response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+ 
 
 def Retrieve_details():
     youtube = build('youtube', 'v3', 
                     developerKey=API_KEY)
     return youtube
-
+# _________________________________________________________________________
 def video_details(video_ids):
     youtube=Retrieve_details()
     details = {}
@@ -53,6 +40,7 @@ def video_details(video_ids):
 
 
 all_snippets = []
+# _________________________________________________________________________
 
 def Display_channel():
      os.makedirs('/tmp/data', exist_ok=True)
@@ -63,7 +51,7 @@ def Display_channel():
     ).execute()
      return ch_response,youtube
 
-
+# _________________________________________________________________________
 
 def display_vidoes():
     ch_response, youtube = Display_channel()
@@ -87,9 +75,10 @@ def display_vidoes():
         nextPageToken = pl_response.get("nextPageToken")
         if not nextPageToken:
             break
-        Generate_JSON()
+    Generate_JSON()
 
         
+# _________________________________________________________________________
 
 def Generate_JSON():
     df = pd.DataFrame(all_snippets)
@@ -102,7 +91,7 @@ def Generate_JSON():
 
 
 
-
+# _________________________________________________________________________
 
 def clean_data():
     df = pd.read_json("/tmp/data/YTdata2026-09-14.json")
@@ -111,12 +100,17 @@ def clean_data():
     df.to_json("/tmp/YTdata2026-09-14.json",orient="records",indent=4)
     print(df["publishedAt"])
 
+    # _________________________________________________________________________
+
+
 def _to_int(value):
     try:
         return int(float(value))
     except (TypeError, ValueError):
         return 0
 
+
+# _________________________________________________________________________
 
 def save_data_staging():
     with open("/tmp/data/video_details.json") as f:
@@ -154,6 +148,9 @@ def save_data_staging():
     cursor.close()
     connection.close()
 
+
+# _________________________________________________________________________
+
 def save_data():
     os.makedirs('/tmp/data', exist_ok=True)
 
@@ -178,6 +175,9 @@ def save_data():
     dicframe.to_json("/tmp/data/video_details.json",orient="records",indent=4)
     save_data_staging()
     print(f"Saved {len(dicframe)} records to video_details.json")
+
+
+# _________________________________________________________________________
 
 def save_data_core():
     with open("/tmp/data/video_details.json") as f:
@@ -227,9 +227,14 @@ with DAG(
 
     t1= PythonOperator(task_id="Recupere_videos",   python_callable=display_vidoes)
     t2 = PythonOperator(task_id="Recupere_details",  python_callable=save_data)
-    t3 = PythonOperator(task_id="Genere_JSON",       python_callable=Generate_JSON)
+    trigger_load = TriggerDagRunOperator(
+        task_id="trigger_youtube_load",
+        trigger_dag_id="youtube_load",
+    )
 
-    t1 >> t2 >> t3
+    t1 >> t2 >> trigger_load
+
+
 
 
 with DAG(
