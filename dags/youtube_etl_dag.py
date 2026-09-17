@@ -117,8 +117,8 @@ def save_data_staging():
         file = json.load(f)
 
     connection = psycopg2.connect(
-        host="host.docker.internal",
-        port=5433,
+        host="postgres",
+        port=5432,
         database="youtube_db",
         user="postgres",
         password="postgres"
@@ -184,8 +184,8 @@ def save_data_core():
         file = json.load(f)
 
     connection = psycopg2.connect(
-        host="host.docker.internal",
-        port=5433,
+        host="postgres",
+        port=5432,
         database="youtube_db",
         user="postgres",
         password="postgres"
@@ -217,6 +217,7 @@ def save_data_core():
     connection.commit()
     cursor.close()
     connection.close()
+
 
 with DAG(
     dag_id="youtube_extract",
