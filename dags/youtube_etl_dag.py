@@ -1,8 +1,5 @@
 # import requests
 import pandas as pd
-# from requests_oauthlib import OAuth2Session
-# from requests.auth import HTTPBasicAuth
-# from oauthlib.oauth2 import BackendApplicationClient
 from googleapiclient.discovery import build
 import json
 import psycopg2
@@ -44,7 +41,7 @@ all_snippets = []
 
 def Display_channel():
      os.makedirs('/tmp/data', exist_ok=True)
-     youtube=build('youtube','v3',developerKey=API_KEY)
+     youtube=Retrieve_details()
      ch_response = youtube.channels().list(
         part='contentDetails',
         id=CHANNEL_ID
