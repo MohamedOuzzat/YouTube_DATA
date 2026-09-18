@@ -89,25 +89,19 @@ def Generate_JSON():
         
 
 
-
-
 # _________________________________________________________________________
 
 def clean_data():
-    df = pd.read_json("/tmp/data/YTdata2026-09-14.json")
+    df = pd.read_json("/tmp/data/video_details.json")
     df['publishedAt']=pd.to_datetime(df['publishedAt'])
+    df['publishedAt']=df['publishedAt'].dt.strftime('%Y-%m-%d')
+    df['viewCount']=pd.to_numeric(df['viewCount'])
+    df['commentCount']=pd.to_numeric(df['commentCount'])
+    df['likeCount']=pd.to_numeric(df['likeCount'])
     # drop=df.drop_duplicates()
-    df.to_json("/tmp/YTdata2026-09-14.json",orient="records",indent=4)
-    print(df["publishedAt"])
+    df.to_json("/tmp/data/video_details.json",orient="records",indent=4)
+    
 
-    # _________________________________________________________________________
-
-
-def _to_int(value):
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return 0
 
 
 # _________________________________________________________________________
@@ -129,18 +123,18 @@ def save_data_staging():
         cursor.execute(
             """
             INSERT INTO staging
-            (video_id, title, published_at, view_count, like_count, comment_count, favorite_count)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            (video_id, title, published_at, view_count, like_count, comment_count)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT (video_id) DO NOTHING
             """,
             (
                 row["videoId"],
                 row["title"],
                 row["publishedAt"],
-                _to_int(row.get("viewCount")),
-                _to_int(row.get("likeCount")),
-                _to_int(row.get("commentCount")),
-                _to_int(row.get("favoriteCount")),
+                row["viewCount"],
+                row["likeCount"],
+                row["commentCount"],
+
             )
         )
 
@@ -173,7 +167,7 @@ def save_data():
         }
     dicframe=pd.DataFrame(dic)
     dicframe.to_json("/tmp/data/video_details.json",orient="records",indent=4)
-    save_data_staging()
+    # save_data_staging()
     print(f"Saved {len(dicframe)} records to video_details.json")
 
 
@@ -193,24 +187,30 @@ def save_data_core():
     cursor = connection.cursor()
 
     for row in file:
+        views = row.get("viewCount")
+        likes = row.get("likeCount")
+        likes_per_view = round(likes / views, 4)
+      
+
         cursor.execute(
             """
             INSERT INTO core
-            (video_id, title, published_at, view_count, like_count, comment_count, favorite_count)
+            (video_id, title, published_at, view_count, like_count, comment_count, likes_par_view)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (video_id) DO UPDATE SET
-                view_count    = EXCLUDED.view_count,
-                like_count    = EXCLUDED.like_count,
-                comment_count = EXCLUDED.comment_count
+                view_count     = EXCLUDED.view_count,
+                like_count     = EXCLUDED.like_count,
+                comment_count  = EXCLUDED.comment_count,
+                likes_par_view = EXCLUDED.likes_par_view
             """,
             (
                 row["videoId"],
                 row["title"],
                 row["publishedAt"],
-                _to_int(row.get("viewCount")),
-                _to_int(row.get("likeCount")),
-                _to_int(row.get("commentCount")),
-                _to_int(row.get("favoriteCount")),
+                row["viewCount"],
+                row["likeCount"],
+                row["commentCount"],
+                likes_per_view,
             )
         )
 

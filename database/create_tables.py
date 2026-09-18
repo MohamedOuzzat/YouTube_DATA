@@ -31,7 +31,6 @@ CREATE TABLE IF NOT EXISTS staging (
     published_at TIMESTAMP,
     view_count BIGINT,
     comment_count BIGINT,
-    favorite_count BIGINT
 );
 """)
 
@@ -50,7 +49,7 @@ CREATE TABLE IF NOT EXISTS core (
     published_at TIMESTAMP,
     view_count BIGINT,
     comment_count BIGINT,
-    favorite_count BIGINT
+    likes_par_view DOUBLE PRECISION,
 );
 """)
 
